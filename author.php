@@ -255,6 +255,7 @@
     const brandLogo = document.getElementById('brandLogo');
     let bannerDesktopUrl = '';
     let bannerMobileUrl = '';
+    let bannerWebsiteUrl = '';
     let videoRenderCount = 0;
 
     document.getElementById('authorName').textContent = authorName;
@@ -382,7 +383,8 @@
       if (!src) return null;
       const wrap = document.createElement('div');
       wrap.className = 'inline-banner';
-      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      const href = bannerWebsiteUrl || '#';
+      wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`;
       return wrap;
     }
 
@@ -405,6 +407,7 @@
         if (!item) return;
         setBrandName(item.name || item.url || '');
         setAccent(item.color_point || '');
+        bannerWebsiteUrl = item.website || item.url || '';
         setBannerUrls(item.banner || '', item.banner_mobile || '');
       } catch (e) {
         console.error(e);

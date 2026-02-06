@@ -179,7 +179,9 @@
     </div>
   </header>
   <div class="banner" id="banner" style="display:none;">
-    <img id="bannerImg" alt="">
+    <a id="bannerLink" href="#" target="_blank" rel="noopener">
+      <img id="bannerImg" alt="">
+    </a>
   </div>
   <div class="wrap">
     <section class="section" id="latestSection" style="display:none;">
@@ -254,11 +256,13 @@
     const contentTitle = document.getElementById('contentTitle');
     const banner = document.getElementById('banner');
     const bannerImg = document.getElementById('bannerImg');
+    const bannerLink = document.getElementById('bannerLink');
     const featuredSection = document.getElementById('featuredSection');
     const featuredWrap = document.getElementById('featuredWrap');
     const featuredTrack = document.getElementById('featuredTrack');
     let bannerDesktopUrl = '';
     let bannerMobileUrl = '';
+    let bannerWebsiteUrl = '';
 
     function showLoading(on) {
       status.style.display = on ? 'block' : 'none';
@@ -354,13 +358,14 @@
       const showHome = isHomeNoFilters();
       if (latestSection) latestSection.style.display = showHome ? 'block' : 'none';
       if (featuredSection) featuredSection.style.display = showHome ? 'block' : 'none';
-      if (!banner || !bannerImg) return;
+      if (!banner || !bannerImg || !bannerLink) return;
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
       const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
       if (!src) {
         banner.style.display = 'none';
         return;
       }
+      bannerLink.href = bannerWebsiteUrl || '#';
       bannerImg.src = src;
       bannerImg.loading = 'eager';
       banner.style.display = 'block';
@@ -379,7 +384,8 @@
       if (!src) return null;
       const wrap = document.createElement('div');
       wrap.className = 'inline-banner';
-      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      const href = bannerWebsiteUrl || '#';
+      wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`;
       return wrap;
     }
     function lockSearchScroll() {
@@ -420,7 +426,7 @@
     }
 
     function setBanner(bannerUrl, bannerMobileUrl) {
-      if (!bannerImg || !banner) return;
+      if (!bannerImg || !banner || !bannerLink) return;
       bannerDesktopUrl = bannerUrl || '';
       bannerMobileUrl = bannerMobileUrl || '';
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
@@ -429,6 +435,7 @@
         banner.style.display = 'none';
         return;
       }
+      bannerLink.href = bannerWebsiteUrl || '#';
       bannerImg.src = src;
       bannerImg.loading = 'eager';
       banner.style.display = 'block';
@@ -453,6 +460,7 @@
         if (!item) return;
         setBrandName(item.name || item.url || '');
         setAccent(item.color_point || '');
+        bannerWebsiteUrl = item.website || item.url || '';
         setBanner(item.banner || '', item.banner_mobile || '');
         window.addEventListener('resize', () => setBanner(item.banner || '', item.banner_mobile || ''));
       } catch (e) {

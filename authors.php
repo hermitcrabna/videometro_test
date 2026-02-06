@@ -139,7 +139,9 @@
   </header>
 
   <div class="banner" id="banner" style="display:none;">
-    <img id="bannerImg" alt="">
+    <a id="bannerLink" href="#" target="_blank" rel="noopener">
+      <img id="bannerImg" alt="">
+    </a>
   </div>
   <div class="wrap">
     <h1>I nostri protagonisti</h1>
@@ -185,8 +187,10 @@
     const brandLogo = document.getElementById('brandLogo');
     const banner = document.getElementById('banner');
     const bannerImg = document.getElementById('bannerImg');
+    const bannerLink = document.getElementById('bannerLink');
     let bannerDesktopUrl = '';
     let bannerMobileUrl = '';
+    let bannerWebsiteUrl = '';
     let authorRenderCount = 0;
 
     function showLoading(on) {
@@ -252,7 +256,7 @@
       }
     }
     function setBanner(bannerUrl, bannerMobileUrl) {
-      if (!banner || !bannerImg) return;
+      if (!banner || !bannerImg || !bannerLink) return;
       bannerDesktopUrl = bannerUrl || '';
       bannerMobileUrl = bannerMobileUrl || '';
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
@@ -261,6 +265,7 @@
         banner.style.display = 'none';
         return;
       }
+      bannerLink.href = bannerWebsiteUrl || '#';
       bannerImg.src = src;
       bannerImg.loading = 'eager';
       banner.style.display = 'block';
@@ -271,7 +276,8 @@
       if (!src) return null;
       const wrap = document.createElement('div');
       wrap.className = 'inline-banner';
-      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      const href = bannerWebsiteUrl || '#';
+      wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`;
       return wrap;
     }
 
@@ -294,6 +300,7 @@
         if (!item) return;
         setBrandName(item.name || item.url || '');
         setAccent(item.color_point || '');
+        bannerWebsiteUrl = item.website || item.url || '';
         setBanner(item.banner || '', item.banner_mobile || '');
         window.addEventListener('resize', () => setBanner(item.banner || '', item.banner_mobile || ''));
       } catch (e) {
