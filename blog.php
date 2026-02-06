@@ -1051,15 +1051,20 @@
 
         const shareBtn = card.querySelector('.share-btn');
         const sharePanel = card.querySelector('.share-panel');
-        const footer = card.querySelector('.card-footer');
-        const thumbEl = card.querySelector('.thumb');
-        const metaEl = card.querySelector('.meta');
+        let shareCloseTimer = null;
         if (shareBtn && sharePanel) {
           shareBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             sharePanel.classList.toggle('open');
           });
           sharePanel.addEventListener('click', (e) => e.stopPropagation());
+          sharePanel.addEventListener('mouseenter', () => {
+            if (shareCloseTimer) clearTimeout(shareCloseTimer);
+          });
+          sharePanel.addEventListener('mouseleave', () => {
+            if (!sharePanel.classList.contains('open')) return;
+            shareCloseTimer = setTimeout(() => sharePanel.classList.remove('open'), 180);
+          });
         }
         const openDesc = () => {
           card.classList.add('show-desc');
@@ -1068,18 +1073,17 @@
         const closeDesc = () => {
           card.classList.remove('show-desc');
           if (dimGrid) targetGrid.classList.remove('dim');
+          if (sharePanel && sharePanel.classList.contains('open')) {
+            if (shareCloseTimer) clearTimeout(shareCloseTimer);
+            shareCloseTimer = setTimeout(() => sharePanel.classList.remove('open'), 180);
+          }
         };
-        if (thumbEl) {
-          thumbEl.addEventListener('mouseenter', openDesc);
-          thumbEl.addEventListener('mouseleave', closeDesc);
-        }
-        if (metaEl) {
-          metaEl.addEventListener('mouseenter', openDesc);
-          metaEl.addEventListener('mouseleave', closeDesc);
-        }
-        if (footer) {
-          footer.addEventListener('mouseenter', closeDesc);
-        }
+        card.addEventListener('mouseenter', openDesc);
+        card.addEventListener('mouseleave', closeDesc);
+        card.addEventListener('focusin', openDesc);
+        card.addEventListener('focusout', (e) => {
+          if (!card.contains(e.relatedTarget)) closeDesc();
+        });
 
         frag.appendChild(card);
         if (withInlineBanners && targetGrid === grid) {
