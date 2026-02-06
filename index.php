@@ -73,11 +73,13 @@
     #navDynamic { display: contents; }
     .nav.hidden { display:none; }
     .wrap { max-width: 1200px; margin: 0 auto; padding: 18px 16px 16px; }
-    .featured-wrap { max-width:1200px; margin: 0 auto; padding: 14px 16px 0; }
+    .section { margin-top: 22px; }
+    .section:first-of-type { margin-top: 0; }
+    .section-title { font-size: 18px; font-weight: 600; margin: 0 0 12px 0; }
+    .featured-wrap { margin: 0; padding: 0; }
     .featured { position:relative; overflow:hidden; border-radius:16px; }
     .featured-track { display:flex; gap:16px; transition: transform .6s ease; }
-    .f-slide { min-width: 70%; background:#20283f; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.08); position:relative; cursor:pointer; display:flex; flex-direction:column; }
-    .f-slide.small { min-width: 30%; opacity:.7; transform: scale(.96); }
+    .f-slide { min-width: calc((100% - 16px) / 2); background:#20283f; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.08); position:relative; cursor:pointer; display:flex; flex-direction:column; }
     .f-thumb { width:100%; aspect-ratio: 16/9; object-fit:cover; display:block; }
     .f-meta { padding:12px 14px; display:flex; flex-direction:column; gap:6px; flex:1; }
     .f-title { font-size:16px; font-weight:600; margin:0; }
@@ -92,11 +94,14 @@
     .f-slide:hover .tag { background: var(--accent); }
     @media (max-width: 900px) {
       .f-slide { min-width: 100%; }
-      .f-slide.small { display:none; }
     }
     .banner { max-width: 1200px; margin: 0 auto; padding: 22px 16px 18px; }
     .banner img { width:100%; height:auto; border-radius:14px; display:block; }
     .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } }
     .grid.dim .card { opacity: .35; transition: opacity .2s ease; }
     .grid.dim .card.show-desc { opacity: 1; }
     .card { background:#303a52; border-radius:14px; overflow:hidden; cursor:pointer; border: 1px solid rgba(255,255,255,.06); transition: background .2s ease, border-color .2s ease; position: relative; }
@@ -171,27 +176,38 @@
       <div class="mega-inner" id="megaInner"></div>
     </div>
   </header>
-    <div class="featured-wrap" id="featuredWrap" style="display:none;">
-    <div class="featured">
-      <div class="featured-track" id="featuredTrack"></div>
-    </div>
-  </div>
   <div class="banner" id="banner" style="display:none;">
     <img id="bannerImg" alt="">
   </div>
   <div class="wrap">
-    <h1 style="margin:0 0 14px 0;">Video</h1>
+    <section class="section" id="latestSection" style="display:none;">
+      <h2 class="section-title">Ultimi contenuti</h2>
+      <div id="latestGrid" class="grid grid-4"></div>
+      <div id="latestSkeletons" class="skeletons grid-4" style="display:none;"></div>
+    </section>
 
-    <div id="grid" class="grid"></div>
-    <div id="skeletons" class="skeletons" style="display:none;"></div>
+    <section class="section" id="featuredSection" style="display:none;">
+      <h2 class="section-title">Categorie in evidenza</h2>
+      <div class="featured-wrap" id="featuredWrap">
+        <div class="featured">
+          <div class="featured-track" id="featuredTrack"></div>
+        </div>
+      </div>
+    </section>
 
-    <div id="status" class="loader" style="display:none;">Caricamento…</div>
-    <div id="err" class="error" style="display:none;">
-      <div id="errMsg" style="margin-bottom:10px;">Errore di caricamento.</div>
-      <button id="retry" class="btn">Riprova</button>
-    </div>
+    <section class="section">
+      <h2 class="section-title">I nostri contenuti</h2>
+      <div id="grid" class="grid"></div>
+      <div id="skeletons" class="skeletons" style="display:none;"></div>
 
-    <div id="sentinel" class="sentinel"></div>
+      <div id="status" class="loader" style="display:none;">Caricamento…</div>
+      <div id="err" class="error" style="display:none;">
+        <div id="errMsg" style="margin-bottom:10px;">Errore di caricamento.</div>
+        <button id="retry" class="btn">Riprova</button>
+      </div>
+
+      <div id="sentinel" class="sentinel"></div>
+    </section>
   </div>
 
   <script src="config.js"></script>
@@ -214,6 +230,9 @@
     let searchUserScrolled = false;
 
     const grid = document.getElementById('grid');
+    const latestSection = document.getElementById('latestSection');
+    const latestGrid = document.getElementById('latestGrid');
+    const latestSkeletons = document.getElementById('latestSkeletons');
     const status = document.getElementById('status');
     const skeletons = document.getElementById('skeletons');
     const errBox = document.getElementById('err');
@@ -232,8 +251,11 @@
     const brandLogo = document.getElementById('brandLogo');
     const banner = document.getElementById('banner');
     const bannerImg = document.getElementById('bannerImg');
+    const featuredSection = document.getElementById('featuredSection');
     const featuredWrap = document.getElementById('featuredWrap');
     const featuredTrack = document.getElementById('featuredTrack');
+    let bannerDesktopUrl = '';
+    let bannerMobileUrl = '';
 
     function showLoading(on) {
       status.style.display = on ? 'block' : 'none';
@@ -259,6 +281,29 @@
           <div class="s-spinner"></div>
         `;
         skeletons.appendChild(sk);
+      }
+    }
+    function showLatestSkeletons(on, count = 8) {
+      if (!latestSkeletons) return;
+      if (!on) {
+        latestSkeletons.style.display = 'none';
+        latestSkeletons.innerHTML = '';
+        return;
+      }
+      latestSkeletons.style.display = 'grid';
+      latestSkeletons.innerHTML = '';
+      for (let i = 0; i < count; i += 1) {
+        const sk = document.createElement('div');
+        sk.className = 's-card';
+        sk.innerHTML = `
+          <div class="s-thumb"></div>
+          <div class="s-body">
+            <div class="s-line w1"></div>
+            <div class="s-line w2"></div>
+          </div>
+          <div class="s-spinner"></div>
+        `;
+        latestSkeletons.appendChild(sk);
       }
     }
 
@@ -299,6 +344,28 @@
     function clearInfo() {
       status.textContent = 'Caricamento…';
     }
+    function isHomeNoFilters() {
+      return !searchTerm && !catId && !subcatId && !featured;
+    }
+    function updateHomeSectionsVisibility() {
+      const showHome = isHomeNoFilters();
+      if (latestSection) latestSection.style.display = showHome ? 'block' : 'none';
+      if (featuredSection) featuredSection.style.display = showHome ? 'block' : 'none';
+      if (!banner || !bannerImg) return;
+      if (!showHome) {
+        banner.style.display = 'none';
+        return;
+      }
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
+      if (!src) {
+        banner.style.display = 'none';
+        return;
+      }
+      bannerImg.src = src;
+      bannerImg.loading = 'eager';
+      banner.style.display = 'block';
+    }
     function lockSearchScroll() {
       if (!searchLockActive || searchUserScrolled) return;
       requestAnimationFrame(() => {
@@ -338,6 +405,12 @@
 
     function setBanner(bannerUrl, bannerMobileUrl) {
       if (!bannerImg || !banner) return;
+      bannerDesktopUrl = bannerUrl || '';
+      bannerMobileUrl = bannerMobileUrl || '';
+      if (!isHomeNoFilters()) {
+        banner.style.display = 'none';
+        return;
+      }
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
       const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerUrl;
       if (!src) {
@@ -556,16 +629,22 @@
       return `https://videometro.tv/video/${slug}`;
     }
 
+    const latestCount = 8;
+    let latestItems = [];
+    const latestIds = new Set();
     let featuredItems = [];
     let featuredIndex = 0;
     let featuredTimer = null;
+    let featuredResizeBound = false;
     const featuredIds = new Set();
 
     function renderFeatured() {
       if (!featuredItems.length) {
+        if (featuredSection) featuredSection.style.display = 'none';
         featuredWrap.style.display = 'none';
         return;
       }
+      if (featuredSection) featuredSection.style.display = 'block';
       featuredWrap.style.display = 'block';
       featuredTrack.innerHTML = '';
       featuredItems.forEach((v, i) => {
@@ -583,7 +662,7 @@
         const subcatId = cat?.subcat_id ?? v.subcat_id ?? '';
         const shareUrl = shareUrlFromSlug(v.slug ?? '');
         const slide = document.createElement('div');
-        slide.className = 'f-slide' + (i === featuredIndex ? '' : ' small');
+        slide.className = 'f-slide';
         slide.innerHTML = `
           <img class="f-thumb" src="${escapeHtml(thumb)}" alt="" loading="eager" decoding="async">
           <div class="f-meta">
@@ -651,22 +730,30 @@
         featuredTrack.appendChild(slide);
       });
       updateFeaturedPosition();
+      if (!featuredResizeBound) {
+        featuredResizeBound = true;
+        window.addEventListener('resize', () => updateFeaturedPosition());
+      }
     }
 
     function updateFeaturedPosition() {
-      const slideWidth = featuredTrack.firstElementChild ? featuredTrack.firstElementChild.getBoundingClientRect().width + 16 : 0;
+      const slideEl = featuredTrack.firstElementChild;
+      if (!slideEl) return;
+      const slideWidth = slideEl.getBoundingClientRect().width + 16;
+      const perView = window.matchMedia('(max-width: 900px)').matches ? 1 : 2;
+      const maxIndex = Math.max(0, featuredItems.length - perView);
+      if (featuredIndex > maxIndex) featuredIndex = 0;
       featuredTrack.style.transform = `translateX(${-featuredIndex * slideWidth}px)`;
-      // update classes
-      [...featuredTrack.children].forEach((el, idx) => {
-        el.classList.toggle('small', idx !== featuredIndex);
-      });
     }
 
     function startFeaturedAutoplay() {
       if (featuredTimer) clearInterval(featuredTimer);
+      const perView = window.matchMedia('(max-width: 900px)').matches ? 1 : 2;
+      const maxIndex = Math.max(0, featuredItems.length - perView);
+      if (maxIndex === 0) return;
       featuredTimer = setInterval(() => {
         if (!featuredItems.length) return;
-        featuredIndex = (featuredIndex + 1) % featuredItems.length;
+        featuredIndex = featuredIndex >= maxIndex ? 0 : featuredIndex + 1;
         updateFeaturedPosition();
       }, 4000);
     }
@@ -688,6 +775,43 @@
         startFeaturedAutoplay();
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    async function loadLatest() {
+      if (!latestGrid || !latestSection) return;
+      latestGrid.innerHTML = '';
+      showLatestSkeletons(true, latestCount);
+      try {
+        const qs = new URLSearchParams();
+        if (aziendaId) qs.set('azienda_id', String(aziendaId));
+        qs.set('limit', String(latestCount));
+        qs.set('offset', '0');
+        qs.set('featured', '0');
+        const res = await fetch(`api/videos.php?${qs.toString()}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const items = extractItems(data) || [];
+        latestItems = items;
+        latestIds.clear();
+        items.forEach(v => {
+          const id = v.id ?? v.video_id;
+          if (id) latestIds.add(String(id));
+        });
+        if (!items.length) {
+          latestSection.style.display = 'none';
+          showLatestSkeletons(false);
+          return;
+        }
+        latestSection.style.display = 'block';
+        renderItems(items, latestGrid, { skipFeatured: false, skipLatest: false, dimGrid: false });
+        showLatestSkeletons(false);
+      } catch (e) {
+        console.error(e);
+        latestSection.style.display = 'none';
+        showLatestSkeletons(false);
       }
     }
 
@@ -720,12 +844,14 @@
       }
     }
 
-    function renderItems(items) {
+    function renderItems(items, targetGrid = grid, options = {}) {
+      const { skipFeatured = true, skipLatest = false, dimGrid = true } = options;
       const frag = document.createDocumentFragment();
 
       items.forEach(v => {
         const vid = String(v.id ?? v.video_id ?? '');
-        if (featuredIds.has(vid)) return;
+        if (skipFeatured && featuredIds.has(vid)) return;
+        if (skipLatest && latestIds.has(vid)) return;
         // Mappatura campi da API Videometro
         const title = v.title ?? v['seo-title'] ?? 'Senza titolo';
         const thumb = v.image ?? v.thumbnail ?? v.thumb ?? v.poster ?? '';
@@ -816,11 +942,11 @@
         }
         const openDesc = () => {
           card.classList.add('show-desc');
-          grid.classList.add('dim');
+          if (dimGrid) targetGrid.classList.add('dim');
         };
         const closeDesc = () => {
           card.classList.remove('show-desc');
-          grid.classList.remove('dim');
+          if (dimGrid) targetGrid.classList.remove('dim');
         };
         if (thumbEl) {
           thumbEl.addEventListener('mouseenter', openDesc);
@@ -837,13 +963,13 @@
         frag.appendChild(card);
       });
 
-      grid.appendChild(frag);
+      targetGrid.appendChild(frag);
       restoreScrollIfNeeded();
       updateVideoSchema(items);
     }
 
     function resetAndLoad() {
-      offset = 0;
+      offset = isHomeNoFilters() ? (latestItems.length || 0) : 0;
       ended = false;
       grid.innerHTML = '';
       loadNextPage();
@@ -895,7 +1021,7 @@
           throw new Error('Risposta non valida: array di video non trovato');
         }
 
-        renderItems(items);
+        renderItems(items, grid, { skipFeatured: true, skipLatest: isHomeNoFilters(), dimGrid: true });
 
         // Stop se non arrivano più risultati
         if (items.length === 0 || items.length < limit) {
@@ -950,8 +1076,15 @@
     let searchDebounce = null;
     function handleSearchInput(value) {
       searchTerm = value.trim();
+      updateHomeSectionsVisibility();
       if (searchTerm.length === 0) {
-        resetAndLoad();
+        updateHomeSectionsVisibility();
+        if (isHomeNoFilters()) {
+          loadLatest().then(() => resetAndLoad());
+          loadFeatured();
+        } else {
+          resetAndLoad();
+        }
         return;
       }
       if (searchTerm.length < 3) {
@@ -971,6 +1104,11 @@
       searchClear.classList.remove('visible');
       clearInfo();
       document.body.classList.remove('searching-mobile');
+      updateHomeSectionsVisibility();
+      if (isHomeNoFilters()) {
+        loadLatest().then(() => resetAndLoad());
+        loadFeatured();
+      }
     }
 
     searchToggle.addEventListener('click', () => {
@@ -990,7 +1128,13 @@
         searchInput.value = '';
         searchTerm = '';
         clearInfo();
-        resetAndLoad();
+        updateHomeSectionsVisibility();
+        if (isHomeNoFilters()) {
+          loadLatest().then(() => resetAndLoad());
+          loadFeatured();
+        } else {
+          resetAndLoad();
+        }
         document.body.classList.remove('searching-mobile');
         searchLockActive = false;
         searchUserScrolled = false;
@@ -1009,7 +1153,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
       closeSearch();
       searchClear.classList.remove('visible');
-      resetAndLoad();
+      if (!isHomeNoFilters()) resetAndLoad();
     });
 
     window.addEventListener('scroll', () => {
@@ -1027,12 +1171,15 @@
     });
 
     // prima pagina
-    const shouldShowFeatured = !catId && !subcatId;
-    if (shouldShowFeatured) {
-      loadFeatured().finally(() => {
+    updateHomeSectionsVisibility();
+    if (isHomeNoFilters()) {
+      Promise.all([loadLatest(), loadFeatured()]).finally(() => {
+        offset = latestItems.length || 0;
         loadNextPage().then(ensureFillViewport);
       });
     } else {
+      if (latestSection) latestSection.style.display = 'none';
+      if (featuredSection) featuredSection.style.display = 'none';
       loadNextPage().then(ensureFillViewport);
     }
     loadCategories();
