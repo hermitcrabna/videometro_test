@@ -5,7 +5,7 @@ $debug = ($env === 'local');
 $errorLog = __DIR__ . '/storage/php-error.log';
 
 $APP_CONFIG = [
-  'azienda_id' => 1,
+  'azienda_id' => 6,
   'env' => $env,
   'tls_verify' => $tlsVerify,
   'debug' => $debug,

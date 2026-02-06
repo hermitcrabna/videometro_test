@@ -378,13 +378,17 @@
       bannerMobileUrl = bannerMobile || '';
     }
     function createInlineBanner() {
-      const isMobile = window.matchMedia('(max-width: 900px)').matches;
-      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
-      if (!src) return null;
+      const src = bannerDesktopUrl || '';
+      const srcMobile = bannerMobileUrl || '';
+      if (!src && !srcMobile) return null;
       const wrap = document.createElement('div');
       wrap.className = 'inline-banner';
       const href = bannerWebsiteUrl || '#';
-      wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`;
+      if (srcMobile) {
+        wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><picture><source media="(max-width: 900px)" srcset="${escapeHtml(srcMobile)}"><img src="${escapeHtml(src || srcMobile)}" alt="" loading="lazy" decoding="async"></picture></a>`;
+      } else {
+        wrap.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`;
+      }
       return wrap;
     }
 
