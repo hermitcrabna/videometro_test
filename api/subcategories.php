@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
 
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../bootstrap.php';
+$boot = vm_bootstrap('application/json; charset=utf-8');
+$APP_CONFIG = $boot['config'];
+$verifyTls = $boot['verify_tls'];
+$verifyHost = $boot['verify_host'];
+$debug = $boot['debug'];
 
 $azienda_id = isset($_GET['azienda_id']) ? (int)$_GET['azienda_id'] : 1;
 $cat_id = isset($_GET['cat_id']) ? (int)$_GET['cat_id'] : 0;
@@ -27,9 +32,8 @@ curl_setopt_array($ch, [
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_TIMEOUT => 15,
   CURLOPT_FOLLOWLOCATION => true,
-  // Dev-only: evita errori CA locali. In produzione usa un CA bundle valido.
-  CURLOPT_SSL_VERIFYHOST => 0,
-  CURLOPT_SSL_VERIFYPEER => 0,
+  CURLOPT_SSL_VERIFYHOST => $verifyHost,
+  CURLOPT_SSL_VERIFYPEER => $verifyTls,
 ]);
 
 $raw = curl_exec($ch);

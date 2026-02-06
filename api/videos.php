@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
 
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../bootstrap.php';
+$boot = vm_bootstrap('application/json; charset=utf-8');
+$APP_CONFIG = $boot['config'];
+$verifyTls = $boot['verify_tls'];
+$verifyHost = $boot['verify_host'];
+$debug = $boot['debug'];
 
 $azienda_id = isset($_GET['azienda_id']) ? (int)$_GET['azienda_id'] : 1;
 $limit      = isset($_GET['limit']) ? max(1, min(50, (int)$_GET['limit'])) : 20;
@@ -14,7 +19,6 @@ $subcat_id   = isset($_GET['subcat_id']) ? (string)$_GET['subcat_id'] : null;
 $featured    = isset($_GET['featured']) ? (string)$_GET['featured'] : null;
 $author_id   = isset($_GET['author_id']) ? (string)$_GET['author_id'] : null;
 
-// Se non arriva offset, calcolalo da page (1-based)
 if ($offset === null && $page !== null) {
   $offset = ($page - 1) * $limit;
 }
@@ -32,16 +36,13 @@ if ($author_id !== null && $author_id !== '') $query['author_id'] = $author_id;
 
 $url = 'https://www.videometro.tv/Api/get_video?' . http_build_query($query);
 
-// Se vuoi forzare page/limit al posto di offset/limit, puoi cambiare qui.
-
 $ch = curl_init($url);
 curl_setopt_array($ch, [
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_TIMEOUT => 15,
   CURLOPT_FOLLOWLOCATION => true,
-  // Dev-only: evita errori CA locali. In produzione usa un CA bundle valido.
-  CURLOPT_SSL_VERIFYHOST => 0,
-  CURLOPT_SSL_VERIFYPEER => 0,
+  CURLOPT_SSL_VERIFYHOST => $verifyHost,
+  CURLOPT_SSL_VERIFYPEER => $verifyTls,
 ]);
 
 $raw = curl_exec($ch);
@@ -63,5 +64,4 @@ if ($raw === false || $http < 200 || $http >= 300) {
   exit;
 }
 
-// Pass-through (volendo puoi normalizzare qui)
 echo $raw;

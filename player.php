@@ -2,13 +2,17 @@
 $slug = $_GET['slug'] ?? '';
 $from = $_GET['from'] ?? '';
 
+require_once __DIR__ . '/bootstrap.php';
+$boot = vm_bootstrap(null);
+$APP_CONFIG = $boot['config'];
+$verifyTls = $boot['verify_tls'];
+$verifyHost = $boot['verify_host'];
+$debug = $boot['debug'];
+
 $aziendaId = 1;
 $azienda = null;
-if (file_exists(__DIR__ . '/config.php')) {
-  include __DIR__ . '/config.php';
-  if (isset($APP_CONFIG['azienda_id'])) {
-    $aziendaId = (int)$APP_CONFIG['azienda_id'];
-  }
+if (isset($APP_CONFIG['azienda_id'])) {
+  $aziendaId = (int)$APP_CONFIG['azienda_id'];
 }
 
 $aziendaName = 'videometro.tv';
@@ -20,8 +24,8 @@ if ($aziendaId) {
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 15,
     CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_SSL_VERIFYHOST => 0,
-    CURLOPT_SSL_VERIFYPEER => 0,
+    CURLOPT_SSL_VERIFYHOST => $verifyHost,
+    CURLOPT_SSL_VERIFYPEER => $verifyTls,
   ]);
   $rawA = curl_exec($chA);
   $httpA = (int)curl_getinfo($chA, CURLINFO_HTTP_CODE);
@@ -44,8 +48,8 @@ if ($slug !== '') {
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 15,
     CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_SSL_VERIFYHOST => 0,
-    CURLOPT_SSL_VERIFYPEER => 0,
+    CURLOPT_SSL_VERIFYHOST => $verifyHost,
+    CURLOPT_SSL_VERIFYPEER => $verifyTls,
   ]);
   $raw = curl_exec($ch);
   $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
