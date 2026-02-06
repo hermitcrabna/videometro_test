@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Video e contenuti di VideoMetro." />
-  <link rel="canonical" href="https://videometro.tv/index.php" />
+  <meta name="description" content="Blog e gallery di VideoMetro." />
+  <link rel="canonical" href="https://videometro.tv/blog.php" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script type="application/ld+json" id="schemaVideos"></script>
-  <title>VideoMetro – Feed</title>
+  <title>VideoMetro – Blog & Gallery</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     :root {
@@ -212,7 +212,7 @@
     </section>
 
     <section class="section">
-      <h2 class="section-title" id="contentTitle">I nostri contenuti</h2>
+      <h2 class="section-title" id="contentTitle">Blog & Gallery</h2>
       <div id="grid" class="grid"></div>
       <div id="skeletons" class="skeletons" style="display:none;"></div>
 
@@ -229,8 +229,8 @@
   <script src="config.js"></script>
   <script>
     const params = new URLSearchParams(location.search);
-    const aziendaId = parseInt(window.APP_CONFIG?.aziendaId || '1', 10);
-    const limit = parseInt(params.get('limit') || '20', 10);
+    const aziendaId = parseInt(params.get('azienda_id') || window.APP_CONFIG?.aziendaId || '1', 10);
+    const limit = parseInt(params.get('limit') || '50', 10);
     let searchTerm = params.get('search_term') || '';
     const catId = params.get('cat_id') || '';
     const subcatId = params.get('subcat_id') || '';
@@ -371,7 +371,7 @@
     function updateHomeSectionsVisibility() {
       const showHome = isHomeNoFilters();
       if (latestSection) latestSection.style.display = showHome ? 'block' : 'none';
-      if (featuredSection) featuredSection.style.display = showHome ? 'block' : 'none';
+      if (featuredSection) featuredSection.style.display = 'none';
       if (!banner || !bannerImg || !bannerLink) return;
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
       const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
@@ -387,10 +387,10 @@
     const subcatNameById = new Map();
     function setContentTitle(text) {
       if (!contentTitle) return;
-      contentTitle.textContent = text || 'I nostri contenuti';
+      contentTitle.textContent = text || 'Blog & Gallery';
     }
     function updateContentTitleDefault() {
-      setContentTitle('I nostri contenuti');
+      setContentTitle('Blog & Gallery');
     }
     function createInlineBanner() {
       const src = bannerDesktopUrl || '';
@@ -722,6 +722,9 @@
       return div.textContent || div.innerText || '';
     }
 
+    const BLOG_FILTER = '1';
+    const GALLERY_FILTER = '1';
+
     function toFlag(val) {
       return String(val ?? '0') === '1';
     }
@@ -753,6 +756,7 @@
 
     const latestCount = 8;
     let latestItems = [];
+    let latestRawCount = 0;
     const latestIds = new Set();
     let featuredItems = [];
     let featuredIndex = 0;
@@ -885,25 +889,7 @@
       }, 4000);
     }
 
-    async function loadFeatured() {
-      try {
-        const res = await fetch(`api/videos.php?azienda_id=${encodeURIComponent(aziendaId)}&featured=1&limit=10&offset=0`, {
-          headers: { 'Accept': 'application/json' },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const items = extractItems(data) || [];
-        featuredItems = items;
-        items.forEach(v => {
-          const id = v.id ?? v.video_id;
-          if (id) featuredIds.add(String(id));
-        });
-        renderFeatured();
-        startFeaturedAutoplay();
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    async function loadFeatured() {}
 
     async function loadLatest() {
       if (!latestGrid || !latestSection) return;
@@ -914,13 +900,17 @@
         if (aziendaId) qs.set('azienda_id', String(aziendaId));
         qs.set('limit', String(latestCount));
         qs.set('offset', '0');
-        qs.set('featured', '0');
+        if (featured) qs.set('featured', featured);
+        qs.set('blog', BLOG_FILTER);
+        qs.set('gallery', GALLERY_FILTER);
         const res = await fetch(`api/videos.php?${qs.toString()}`, {
           headers: { 'Accept': 'application/json' },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        const items = extractItems(data) || [];
+        const rawItems = extractItems(data) || [];
+        latestRawCount = rawItems.length;
+        const items = rawItems;
         latestItems = items;
         latestIds.clear();
         items.forEach(v => {
@@ -1107,7 +1097,7 @@
     }
 
     function resetAndLoad() {
-      offset = isHomeNoFilters() ? (latestItems.length || 0) : 0;
+      offset = isHomeNoFilters() ? (latestRawCount || 0) : 0;
       mainRenderCount = 0;
       ended = false;
       grid.innerHTML = '';
@@ -1141,7 +1131,8 @@
         if (catId) qs.set('cat_id', catId);
         if (subcatId) qs.set('subcat_id', subcatId);
         if (featured) qs.set('featured', featured);
-        else qs.set('featured', '0');
+        qs.set('blog', BLOG_FILTER);
+        qs.set('gallery', GALLERY_FILTER);
 
         const url = `api/videos.php?${qs.toString()}`;
         const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -1154,7 +1145,6 @@
         }
 
         json = await res.json();
-
         const items = extractItems(json);
         if (!items) {
           throw new Error('Risposta non valida: array di video non trovato');
@@ -1316,8 +1306,8 @@
     updateHomeSectionsVisibility();
     loadSubcatLabel();
     if (isHomeNoFilters()) {
-      Promise.all([loadLatest(), loadFeatured()]).finally(() => {
-        offset = latestItems.length || 0;
+      Promise.all([loadLatest()]).finally(() => {
+        offset = latestRawCount || 0;
         loadNextPage().then(ensureFillViewport);
       });
     } else {

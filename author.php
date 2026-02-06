@@ -141,6 +141,7 @@
       <a class="brand" id="brandLogo" href="index.php">videometro.tv</a>
       <nav class="nav" id="navMenu">
         <a href="authors.php">Protagonisti</a>
+        <a href="blog.php" id="navBlog" style="display:none;">Blog</a>
         <span id="navDynamic"></span>
       </nav>
       <div class="spacer"></div>
@@ -159,6 +160,7 @@
     </div>
     <div class="mobile-nav" id="mobileNav">
       <a href="authors.php">Protagonisti</a>
+      <a href="blog.php" id="mobileBlog" style="display:none;">Blog</a>
       <div id="mobileNavDynamic"></div>
     </div>
     <div class="mega" id="megaMenu">
@@ -249,6 +251,8 @@
     const searchClearSticky = document.getElementById('searchClearSticky');
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileNav = document.getElementById('mobileNav');
+    const navBlog = document.getElementById('navBlog');
+    const mobileBlog = document.getElementById('mobileBlog');
     const searchJump = document.getElementById('searchJump');
     const navDynamic = document.getElementById('navDynamic');
     const mobileNavDynamic = document.getElementById('mobileNavDynamic');
@@ -398,6 +402,30 @@
       if (data.id || data.name || data.url || data.banner) return data;
       const vals = Object.values(data);
       return vals && vals.length ? vals[0] : null;
+    }
+
+    function setBlogMenuVisible(visible) {
+      if (navBlog) navBlog.style.display = visible ? '' : 'none';
+      if (mobileBlog) mobileBlog.style.display = visible ? '' : 'none';
+    }
+
+    async function checkBlogMenu() {
+      try {
+        const qs = new URLSearchParams();
+        if (aziendaId) qs.set('azienda_id', String(aziendaId));
+        qs.set('limit', '1');
+        qs.set('offset', '0');
+        qs.set('blog', '1');
+        qs.set('gallery', '1');
+        const res = await fetch(`api/videos.php?${qs.toString()}`, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const items = extractItems(data) || [];
+        setBlogMenuVisible(items.length > 0);
+      } catch (e) {
+        console.error(e);
+        setBlogMenuVisible(false);
+      }
     }
 
     async function loadAzienda() {
@@ -930,6 +958,7 @@
 
     loadCategories();
     loadAzienda();
+    checkBlogMenu();
     loadNextPage();
 
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';

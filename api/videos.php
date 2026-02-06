@@ -18,6 +18,8 @@ $cat_id      = isset($_GET['cat_id']) ? (string)$_GET['cat_id'] : null;
 $subcat_id   = isset($_GET['subcat_id']) ? (string)$_GET['subcat_id'] : null;
 $featured    = isset($_GET['featured']) ? (string)$_GET['featured'] : null;
 $author_id   = isset($_GET['author_id']) ? (string)$_GET['author_id'] : null;
+$blog        = isset($_GET['blog']) ? (string)$_GET['blog'] : null;
+$gallery     = isset($_GET['gallery']) ? (string)$_GET['gallery'] : null;
 
 if ($offset === null && $page !== null) {
   $offset = ($page - 1) * $limit;
@@ -33,6 +35,8 @@ if ($cat_id !== null && $cat_id !== '') $query['cat_id'] = $cat_id;
 if ($subcat_id !== null && $subcat_id !== '') $query['subcat_id'] = $subcat_id;
 if ($featured !== null && $featured !== '') $query['featured'] = $featured;
 if ($author_id !== null && $author_id !== '') $query['author_id'] = $author_id;
+if ($blog !== null && $blog !== '') $query['blog'] = $blog;
+if ($gallery !== null && $gallery !== '') $query['gallery'] = $gallery;
 
 $url = 'https://www.videometro.tv/Api/get_video?' . http_build_query($query);
 
