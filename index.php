@@ -102,6 +102,8 @@
     @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } }
+    .inline-banner { grid-column: 1 / -1; }
+    .inline-banner img { width:100%; height:auto; border-radius:14px; display:block; }
     .grid.dim .card { opacity: .35; transition: opacity .2s ease; }
     .grid.dim .card.show-desc { opacity: 1; }
     .card { background:#303a52; border-radius:14px; overflow:hidden; cursor:pointer; border: 1px solid rgba(255,255,255,.06); transition: background .2s ease, border-color .2s ease; position: relative; }
@@ -196,7 +198,7 @@
     </section>
 
     <section class="section">
-      <h2 class="section-title">I nostri contenuti</h2>
+      <h2 class="section-title" id="contentTitle">I nostri contenuti</h2>
       <div id="grid" class="grid"></div>
       <div id="skeletons" class="skeletons" style="display:none;"></div>
 
@@ -249,6 +251,7 @@
     const mobileNav = document.getElementById('mobileNav');
     const mobileNavDynamic = document.getElementById('mobileNavDynamic');
     const brandLogo = document.getElementById('brandLogo');
+    const contentTitle = document.getElementById('contentTitle');
     const banner = document.getElementById('banner');
     const bannerImg = document.getElementById('bannerImg');
     const featuredSection = document.getElementById('featuredSection');
@@ -352,10 +355,6 @@
       if (latestSection) latestSection.style.display = showHome ? 'block' : 'none';
       if (featuredSection) featuredSection.style.display = showHome ? 'block' : 'none';
       if (!banner || !bannerImg) return;
-      if (!showHome) {
-        banner.style.display = 'none';
-        return;
-      }
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
       const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
       if (!src) {
@@ -365,6 +364,23 @@
       bannerImg.src = src;
       bannerImg.loading = 'eager';
       banner.style.display = 'block';
+    }
+    const subcatNameById = new Map();
+    function setContentTitle(text) {
+      if (!contentTitle) return;
+      contentTitle.textContent = text || 'I nostri contenuti';
+    }
+    function updateContentTitleDefault() {
+      setContentTitle('I nostri contenuti');
+    }
+    function createInlineBanner() {
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
+      if (!src) return null;
+      const wrap = document.createElement('div');
+      wrap.className = 'inline-banner';
+      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      return wrap;
     }
     function lockSearchScroll() {
       if (!searchLockActive || searchUserScrolled) return;
@@ -407,10 +423,6 @@
       if (!bannerImg || !banner) return;
       bannerDesktopUrl = bannerUrl || '';
       bannerMobileUrl = bannerMobileUrl || '';
-      if (!isHomeNoFilters()) {
-        banner.style.display = 'none';
-        return;
-      }
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
       const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerUrl;
       if (!src) {
@@ -532,6 +544,7 @@
           const sid = s.subcat_id ?? s.id ?? '';
           const featured = String(s.featured ?? '0') === '1';
           if (!name || !sid) return;
+          subcatNameById.set(String(sid), String(name));
           const link = document.createElement('a');
           link.href = `index.php?cat_id=${encodeURIComponent(catId)}&subcat_id=${encodeURIComponent(sid)}`;
           link.textContent = name;
@@ -546,6 +559,41 @@
       } catch (e) {
         megaInner.textContent = 'Errore caricamento.';
         console.error(e);
+      }
+    }
+
+    async function loadSubcatLabel() {
+      if (!subcatId || !catId) {
+        updateContentTitleDefault();
+        return;
+      }
+      const cached = subcatNameById.get(String(subcatId));
+      if (cached) {
+        setContentTitle(cached);
+        return;
+      }
+      try {
+        const res = await fetch(`api/subcategories.php?azienda_id=${encodeURIComponent(aziendaId)}&cat_id=${encodeURIComponent(catId)}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.data ?? []);
+        items.forEach(s => {
+          const name = s.sub_categoria ?? s.subcategory ?? '';
+          const sid = s.subcat_id ?? s.id ?? '';
+          if (!name || !sid) return;
+          subcatNameById.set(String(sid), String(name));
+        });
+        const label = subcatNameById.get(String(subcatId));
+        if (label) {
+          setContentTitle(label);
+        } else {
+          updateContentTitleDefault();
+        }
+      } catch (e) {
+        console.error(e);
+        updateContentTitleDefault();
       }
     }
 
@@ -637,6 +685,7 @@
     let featuredTimer = null;
     let featuredResizeBound = false;
     const featuredIds = new Set();
+    let mainRenderCount = 0;
 
     function renderFeatured() {
       if (!featuredItems.length) {
@@ -845,7 +894,7 @@
     }
 
     function renderItems(items, targetGrid = grid, options = {}) {
-      const { skipFeatured = true, skipLatest = false, dimGrid = true } = options;
+      const { skipFeatured = true, skipLatest = false, dimGrid = true, withInlineBanners = false } = options;
       const frag = document.createDocumentFragment();
 
       items.forEach(v => {
@@ -961,6 +1010,13 @@
         }
 
         frag.appendChild(card);
+        if (withInlineBanners && targetGrid === grid) {
+          mainRenderCount += 1;
+          if (mainRenderCount % 40 === 0) {
+            const bannerEl = createInlineBanner();
+            if (bannerEl) frag.appendChild(bannerEl);
+          }
+        }
       });
 
       targetGrid.appendChild(frag);
@@ -970,6 +1026,7 @@
 
     function resetAndLoad() {
       offset = isHomeNoFilters() ? (latestItems.length || 0) : 0;
+      mainRenderCount = 0;
       ended = false;
       grid.innerHTML = '';
       loadNextPage();
@@ -1021,7 +1078,7 @@
           throw new Error('Risposta non valida: array di video non trovato');
         }
 
-        renderItems(items, grid, { skipFeatured: true, skipLatest: isHomeNoFilters(), dimGrid: true });
+        renderItems(items, grid, { skipFeatured: true, skipLatest: isHomeNoFilters(), dimGrid: true, withInlineBanners: true });
 
         // Stop se non arrivano più risultati
         if (items.length === 0 || items.length < limit) {
@@ -1077,6 +1134,7 @@
     function handleSearchInput(value) {
       searchTerm = value.trim();
       updateHomeSectionsVisibility();
+      loadSubcatLabel();
       if (searchTerm.length === 0) {
         updateHomeSectionsVisibility();
         if (isHomeNoFilters()) {
@@ -1104,6 +1162,7 @@
       searchClear.classList.remove('visible');
       clearInfo();
       document.body.classList.remove('searching-mobile');
+      loadSubcatLabel();
       updateHomeSectionsVisibility();
       if (isHomeNoFilters()) {
         loadLatest().then(() => resetAndLoad());
@@ -1129,6 +1188,7 @@
         searchTerm = '';
         clearInfo();
         updateHomeSectionsVisibility();
+        loadSubcatLabel();
         if (isHomeNoFilters()) {
           loadLatest().then(() => resetAndLoad());
           loadFeatured();
@@ -1172,6 +1232,7 @@
 
     // prima pagina
     updateHomeSectionsVisibility();
+    loadSubcatLabel();
     if (isHomeNoFilters()) {
       Promise.all([loadLatest(), loadFeatured()]).finally(() => {
         offset = latestItems.length || 0;

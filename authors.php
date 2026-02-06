@@ -74,8 +74,12 @@
       .searching-mobile .hamburger { display:none; }
     }
 
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px 16px 28px; }
-    h1 { margin:0 0 18px 0; font-size: 32px; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 28px; }
+    h1 { margin:22px 0 12px 0; font-size: 18px; font-weight: 600; }
+    .banner { max-width: 1200px; margin: 0 auto; padding: 22px 16px 18px; }
+    .banner img { width:100%; height:auto; border-radius:14px; display:block; }
+    .inline-banner { grid-column: 1 / -1; }
+    .inline-banner img { width:100%; height:auto; border-radius:14px; display:block; }
 
     .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
     .card { background: var(--card); border-radius: 16px; border: 1px solid var(--card-border); overflow: hidden; cursor: pointer; }
@@ -134,6 +138,9 @@
     </div>
   </header>
 
+  <div class="banner" id="banner" style="display:none;">
+    <img id="bannerImg" alt="">
+  </div>
   <div class="wrap">
     <h1>I nostri protagonisti</h1>
 
@@ -176,6 +183,11 @@
     const mobileNav = document.getElementById('mobileNav');
     const mobileNavDynamic = document.getElementById('mobileNavDynamic');
     const brandLogo = document.getElementById('brandLogo');
+    const banner = document.getElementById('banner');
+    const bannerImg = document.getElementById('bannerImg');
+    let bannerDesktopUrl = '';
+    let bannerMobileUrl = '';
+    let authorRenderCount = 0;
 
     function showLoading(on) {
       status.style.display = on ? 'block' : 'none';
@@ -239,6 +251,29 @@
         brandLogo.textContent = name;
       }
     }
+    function setBanner(bannerUrl, bannerMobileUrl) {
+      if (!banner || !bannerImg) return;
+      bannerDesktopUrl = bannerUrl || '';
+      bannerMobileUrl = bannerMobileUrl || '';
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerUrl;
+      if (!src) {
+        banner.style.display = 'none';
+        return;
+      }
+      bannerImg.src = src;
+      bannerImg.loading = 'eager';
+      banner.style.display = 'block';
+    }
+    function createInlineBanner() {
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
+      if (!src) return null;
+      const wrap = document.createElement('div');
+      wrap.className = 'inline-banner';
+      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      return wrap;
+    }
 
     function normalizeAzienda(data) {
       if (!data) return null;
@@ -259,6 +294,8 @@
         if (!item) return;
         setBrandName(item.name || item.url || '');
         setAccent(item.color_point || '');
+        setBanner(item.banner || '', item.banner_mobile || '');
+        window.addEventListener('resize', () => setBanner(item.banner || '', item.banner_mobile || ''));
       } catch (e) {
         console.error(e);
       }
@@ -467,6 +504,11 @@
           location.href = `author.php?${qs.toString()}`;
         });
         frag.appendChild(card);
+        authorRenderCount += 1;
+        if (authorRenderCount % 20 === 0) {
+          const bannerEl = createInlineBanner();
+          if (bannerEl) frag.appendChild(bannerEl);
+        }
       });
       grid.appendChild(frag);
       restoreScrollIfNeeded();
@@ -548,6 +590,7 @@
     function resetAndLoad() {
       offset = 0;
       ended = false;
+      authorRenderCount = 0;
       grid.innerHTML = '';
       loadNextPage();
     }

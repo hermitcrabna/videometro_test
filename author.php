@@ -117,6 +117,8 @@
 
     .loader, .error { padding: 14px; text-align:center; opacity:.85; }
     .skeletons { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:14px; }
+    .inline-banner { grid-column: 1 / -1; }
+    .inline-banner img { width:100%; height:auto; border-radius:14px; display:block; }
     .s-card { background:#303a52; border-radius:14px; border:1px solid rgba(255,255,255,.06); overflow:hidden; position:relative; }
     .s-thumb { aspect-ratio:16/9; background: linear-gradient(90deg, #2b3248 25%, #36405c 50%, #2b3248 75%); background-size:200% 100%; animation: shimmer 1.2s infinite; }
     .s-body { padding:12px 14px 14px; display:flex; flex-direction:column; gap:10px; }
@@ -251,6 +253,9 @@
     const navDynamic = document.getElementById('navDynamic');
     const mobileNavDynamic = document.getElementById('mobileNavDynamic');
     const brandLogo = document.getElementById('brandLogo');
+    let bannerDesktopUrl = '';
+    let bannerMobileUrl = '';
+    let videoRenderCount = 0;
 
     document.getElementById('authorName').textContent = authorName;
     const imgEl = document.getElementById('authorImg');
@@ -367,6 +372,19 @@
         brandLogo.textContent = name;
       }
     }
+    function setBannerUrls(bannerUrl, bannerMobile) {
+      bannerDesktopUrl = bannerUrl || '';
+      bannerMobileUrl = bannerMobile || '';
+    }
+    function createInlineBanner() {
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      const src = isMobile && bannerMobileUrl ? bannerMobileUrl : bannerDesktopUrl;
+      if (!src) return null;
+      const wrap = document.createElement('div');
+      wrap.className = 'inline-banner';
+      wrap.innerHTML = `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">`;
+      return wrap;
+    }
 
     function normalizeAzienda(data) {
       if (!data) return null;
@@ -387,6 +405,7 @@
         if (!item) return;
         setBrandName(item.name || item.url || '');
         setAccent(item.color_point || '');
+        setBannerUrls(item.banner || '', item.banner_mobile || '');
       } catch (e) {
         console.error(e);
       }
@@ -708,6 +727,11 @@
           footer.addEventListener('mouseenter', closeDesc);
         }
         frag.appendChild(card);
+        videoRenderCount += 1;
+        if (videoRenderCount % 20 === 0) {
+          const bannerEl = createInlineBanner();
+          if (bannerEl) frag.appendChild(bannerEl);
+        }
       });
       grid.appendChild(frag);
       restoreScrollIfNeeded();
@@ -801,6 +825,7 @@
     function resetAndLoad() {
       offset = 0;
       ended = false;
+      videoRenderCount = 0;
       grid.innerHTML = '';
       loadNextPage();
     }
