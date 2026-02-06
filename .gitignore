@@ -1,0 +1,31 @@
+cat > .gitignore << 'EOF'
+# --- Sistema ---
+.DS_Store
+Thumbs.db
+
+# --- Config / segreti ---
+.env
+.env.*
+*.key
+*.pem
+
+# --- Dipendenze ---
+node_modules/
+vendor/
+
+# --- Cache / build ---
+.cache/
+dist/
+build/
+
+# --- Codex / AI ---
+.codex/
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- OS / cartelle problematiche ---
+Library/
+**/Library/Application Support/FileProvider/
+EOF
